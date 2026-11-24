@@ -28,6 +28,12 @@ create table if not exists public.admin_secret (
   pass text not null
 );
 
+-- สิทธิ์ให้หน้าเว็บเรียกใช้ได้ (ใช้ได้ทั้งตอนติ๊กหรือไม่ติ๊ก "Grant API access to new tables automatically")
+grant usage on schema public to anon, authenticated;
+grant select on public.app_settings to anon, authenticated;
+grant select, insert on public.photos to anon, authenticated;
+revoke all on public.admin_secret from anon, authenticated;
+
 alter table public.app_settings enable row level security;
 alter table public.photos enable row level security;
 alter table public.admin_secret enable row level security;
