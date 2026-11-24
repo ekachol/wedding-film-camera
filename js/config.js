@@ -31,8 +31,8 @@ export const CONFIG = {
   // ---- ที่เก็บรูป (Supabase) ----
   // เว้นว่างไว้ = โหมดทดลอง รูปจะอยู่ในเครื่องที่ถ่ายเท่านั้น
   // ใส่ครบ 2 ช่อง = รูปของทุกคนขึ้นแกลเลอรีรวม
-  supabaseUrl: '',
-  supabaseAnonKey: '',
+  supabaseUrl: 'https://xqlwsqnlhtbxxnwvfppe.supabase.co',
+  supabaseAnonKey: '',   // ใส่ Publishable key (sb_publishable_...) ตรงนี้
 
   // รหัสหน้าบ่าวสาว (ใช้เฉพาะโหมดทดลอง ของจริงตั้งใน Supabase ตามคู่มือ)
   demoAdminPass: '1234',
