@@ -39,7 +39,9 @@ $('a-form').onsubmit = async (e) => {
     $('a-main').hidden = false;
     drawQR();
   } catch (err) {
-    $('a-err').textContent = err.message === 'BAD_PASS' ? 'รหัสผ่านไม่ถูกต้อง' : 'เชื่อมต่อไม่ได้: ' + err.message;
+    $('a-err').textContent = err.message !== 'BAD_PASS' ? 'เชื่อมต่อไม่ได้: ' + err.message
+      : store.isLive ? 'รหัสผ่านไม่ถูกต้อง (รหัสที่ตั้งไว้ใน Supabase)'
+      : 'ลิงก์นี้ยังเป็นโหมดทดลอง ยังไม่ได้เชื่อม Supabase (รหัสทดลองคือ ' + CONFIG.demoAdminPass + ') ให้เปิดจากลิงก์หลักของ Vercel';
   }
 };
 $('a-refresh').onclick = () => load().catch((e) => alert(e.message));
