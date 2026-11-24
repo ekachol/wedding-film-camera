@@ -74,6 +74,8 @@ function finderMsg(html) {
 
 async function startCamera() {
   paintCounter();
+  if (left() === 0) await refreshAllowance();
+  if (current !== 'camera') return;
   if (left() === 0) return outOfFilm();
   finderMsg('');
   stopCamera();
@@ -99,10 +101,16 @@ function stopCamera() {
   stream = null;
   video.srcObject = null;
 }
+async function refreshAllowance() {
+  settings = await store.loadSettings(guest.id);
+  if (left() > 0) await store.unreject();
+  paintCounter();
+}
 function outOfFilm() {
   stopCamera();
-  finderMsg(`<div style="font-size:19px">ฟิล์มหมดม้วนแล้ว</div><div>ขอบคุณที่ช่วยเก็บความทรงจำให้เรานะ</div><button class="btn" id="c-see">ดูอัลบั้ม</button>`);
+  finderMsg(`<div style="font-size:19px">ฟิล์มหมดม้วนแล้ว</div><div>ขอบคุณที่ช่วยเก็บความทรงจำให้เรานะ<br><small>อยากถ่ายเพิ่ม ขอฟิล์มจากบ่าวสาวได้ แล้วกดเช็กฟิล์มอีกครั้ง</small></div><button class="btn" id="c-see">ดูอัลบั้ม</button><button class="btn" id="c-recheck" style="border:0;text-decoration:underline">เช็กฟิล์มอีกครั้ง</button>`);
   $('c-see').onclick = () => show('gallery');
+  $('c-recheck').onclick = async () => { await refreshAllowance(); if (left() > 0) { startCamera(); sync(); } };
 }
 
 let audio;
@@ -275,20 +283,33 @@ $('lb-save').onclick = async () => {
 };
 
 // ---------- เริ่ม ----------
+function nameOk() {
+  const ok = $('w-name').value.trim().length > 0;
+  $('w-start').disabled = !ok;
+  return ok;
+}
 function enterCamera() {
+  if (!nameOk()) {
+    if (current !== 'welcome') show('welcome');
+    $('w-name-hint').hidden = false;
+    $('w-name').focus();
+    return;
+  }
   guest.name = $('w-name').value.trim().slice(0, 40);
   localStorage.setItem(LS.name, guest.name);
   show('camera');
 }
+$('w-name').addEventListener('input', () => { if (nameOk()) $('w-name-hint').hidden = true; });
+$('w-name').addEventListener('keydown', (e) => { if (e.key === 'Enter') enterCamera(); });
 $('w-start').onclick = enterCamera;
+nameOk();
 $('w-gallery').onclick = () => show('gallery');
 
 (async () => {
   paintCounter();
   const mine = await store.roll.all().catch(() => []);
   used = Math.max(used, mine.length);
-  settings = await store.loadSettings();
-  paintCounter();
+  await refreshAllowance();
   if (current === 'camera' && left() === 0) outOfFilm();
   sync();
 })();

@@ -14,9 +14,43 @@ function paintStats() {
   $('a-guests').textContent = new Set(photos.map((p) => p.guest_name || p.id)).size;
 }
 
+let guests = [];
+let baseShots = CONFIG.maxShots;
+function paintGuests() {
+  const q = ($('a-gsearch').value || '').trim().toLowerCase();
+  const list = guests.filter((g) => !q || (g.guest_name || '').toLowerCase().includes(q));
+  $('a-guests-list').replaceChildren(...list.map((g) => {
+    const row = document.createElement('div');
+    row.className = 'guest-row';
+    const who = document.createElement('div'); who.className = 'who';
+    const nm = document.createElement('b'); nm.textContent = g.guest_name || '(ไม่ได้ใส่ชื่อ)';
+    const info = document.createElement('span');
+    const total = baseShots + g.extra;
+    info.textContent = `ถ่ายแล้ว ${g.shots} / ${total} รูป` + (g.extra ? ` (เพิ่มให้ ${g.extra})` : '');
+    info.classList.toggle('full', g.shots >= total);
+    who.append(nm, info);
+    const btn = (label, n, cls) => {
+      const b = document.createElement('button'); b.textContent = label; if (cls) b.className = cls;
+      b.disabled = n < 0 && !g.extra;
+      b.onclick = async () => {
+        b.disabled = true;
+        try { g.extra = await store.adminAddShots(pass, g.guest_id, n); paintGuests(); }
+        catch (e) { alert('ทำรายการไม่สำเร็จ: ' + e.message); b.disabled = false; }
+      };
+      return b;
+    };
+    row.append(who, btn('−5', -5), btn('+5', 5, 'plus'));
+    return row;
+  }));
+  if (!list.length) $('a-guests-list').textContent = guests.length ? 'ไม่พบชื่อนี้' : 'ยังไม่มีแขกถ่ายรูป';
+}
+$('a-gsearch').oninput = paintGuests;
+
 async function load() {
-  photos = await store.adminList(pass);
+  [photos, guests] = await Promise.all([store.adminList(pass), store.adminListGuests(pass)]);
+  baseShots = (await store.loadSettings()).baseShots;
   paintStats();
+  paintGuests();
   $('a-grid').replaceChildren(...photos.map((p) => {
     const b = document.createElement('div');
     b.className = 'cell' + (p.hidden ? ' is-hidden' : '');
@@ -127,7 +161,7 @@ function drawQR() {
   }
   ctx.font = '300 30px "Prompt", sans-serif';
   ctx.fillStyle = CONFIG.theme?.soft || '#8a8172';
-  ctx.fillText(`คนละ ${CONFIG.maxShots} รูป  ·  ดูรูปของทุกคนได้ในอัลบั้มรวม`, W / 2, 1060);
+  ctx.fillText(`คนละ ${baseShots} รูป  ·  ดูรูปของทุกคนได้ในอัลบั้มรวม`, W / 2, 1060);
   ctx.font = '400 34px "Cormorant Garamond", serif';
   ctx.fillStyle = ink;
   ctx.fillText(CONFIG.eventDate || '', W / 2, 1125);

@@ -128,3 +128,15 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .g-sync { max-width: 880px; margin: 0 auto 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; font-size: 14px; background: rgba(154,91,61,.1); border-left: 3px solid var(--accent); }
 .g-sync small { color: var(--soft); word-break: break-word; }
 .g-sync .pill:disabled { opacity: .6; }
+.req { color: var(--accent); font-style: normal; }
+.name-hint { margin: -4px 0 4px; font-size: 13.5px; color: #a3402a; align-self: flex-start; }
+.btn.primary:disabled { opacity: .45; }
+.guest-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid rgba(85,48,28,.12); }
+.guest-row:last-child { border-bottom: 0; }
+.guest-row .who { flex: 1; min-width: 0; }
+.guest-row .who b { display: block; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.guest-row .who span { font-size: 13px; color: var(--soft); }
+.guest-row .who span.full { color: #a3402a; }
+.guest-row button { flex: none; border: 1px solid rgba(85,48,28,.3); background: #fff; border-radius: 16px; padding: 6px 12px; font-size: 13.5px; }
+.guest-row button.plus { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.g-search { width: 100%; font: inherit; font-size: 15px; padding: 10px 12px; margin: 6px 0 4px; color: var(--ink); background: #fff; border: 1px solid rgba(85,48,28,.22); border-radius: 2px; }

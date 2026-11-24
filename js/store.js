@@ -35,18 +35,32 @@ export const roll = {
 };
 
 // ---------- ตั้งค่า (ค่าบน Supabase ชนะค่าใน config.js) ----------
-export async function loadSettings() {
-  const s = { maxShots: CONFIG.maxShots, revealAt: CONFIG.revealAt ? new Date(CONFIG.revealAt) : null };
+export async function loadSettings(guestId) {
+  const s = { maxShots: CONFIG.maxShots, baseShots: CONFIG.maxShots, revealAt: CONFIG.revealAt ? new Date(CONFIG.revealAt) : null };
   if (isLive) {
     try {
       const { data } = await sb.from('app_settings').select('max_shots,reveal_at').eq('id', 1).single();
       if (data) {
-        s.maxShots = data.max_shots;
+        s.maxShots = s.baseShots = data.max_shots;
         s.revealAt = data.reveal_at ? new Date(data.reveal_at) : null;
       }
+      if (guestId) {
+        const { data: allow, error } = await sb.rpc('my_allowance', { p_guest_id: guestId });
+        if (!error && typeof allow === 'number') s.maxShots = allow;
+      }
     } catch { /* ออฟไลน์ ใช้ค่าในไฟล์ */ }
+  } else if (guestId) {
+    s.maxShots += demoBonus()[guestId] || 0;
   }
   return s;
+}
+
+// โหมดเก็บในเครื่อง: ฟิล์มพิเศษเก็บใน localStorage
+function demoBonus() { try { return JSON.parse(localStorage.getItem('fc_demo_bonus') || '{}'); } catch { return {}; } }
+
+/** ปลดสถานะ "เกินจำนวน" ให้รูปที่ค้าง เมื่อได้ฟิล์มเพิ่ม */
+export async function unreject() {
+  for (const r of await roll.all()) if (r.rejected) { r.rejected = false; await roll.put(r); }
 }
 
 const pub = (kind, id) => `${CONFIG.supabaseUrl}/storage/v1/object/public/${BUCKET}/${kind}/${id}.jpg`;
@@ -142,4 +156,33 @@ export async function adminDelete(pass, id) {
   if (error) throw new Error(/BAD_PASS/.test(error.message) ? 'BAD_PASS' : error.message);
   const { error: e2 } = await sb.storage.from(BUCKET).remove([`full/${id}.jpg`, `thumb/${id}.jpg`]);
   if (e2) console.warn('file cleanup failed', e2);   // รูปหายจากอัลบั้มแล้ว ไฟล์ค้างไม่กระทบ
+}
+
+/** แขกที่ถ่ายแล้ว: [{guest_id, guest_name, shots, extra}] */
+export async function adminListGuests(pass) {
+  if (!isLive) {
+    if (pass !== CONFIG.demoAdminPass) throw new Error('BAD_PASS');
+    const by = new Map();
+    for (const r of await roll.all()) {
+      const g = by.get(r.guest_id) || { guest_id: r.guest_id, guest_name: r.guest_name, shots: 0, extra: demoBonus()[r.guest_id] || 0 };
+      g.shots++; by.set(r.guest_id, g);
+    }
+    return [...by.values()];
+  }
+  const { data, error } = await sb.rpc('admin_list_guests', { p_pass: pass });
+  if (error) throw new Error(/BAD_PASS/.test(error.message) ? 'BAD_PASS' : error.message);
+  return data.map((g) => ({ ...g, shots: Number(g.shots) }));
+}
+
+/** เพิ่ม/ลดฟิล์มให้แขก 1 คน คืนจำนวนฟิล์มพิเศษใหม่ */
+export async function adminAddShots(pass, guestId, n) {
+  if (!isLive) {
+    const b = demoBonus();
+    b[guestId] = Math.max(0, (b[guestId] || 0) + n);
+    localStorage.setItem('fc_demo_bonus', JSON.stringify(b));
+    return b[guestId];
+  }
+  const { data, error } = await sb.rpc('admin_add_shots', { p_pass: pass, p_guest_id: guestId, p_n: n });
+  if (error) throw new Error(error.message);
+  return data;
 }

@@ -21,14 +21,15 @@
       <div class="rule"><span class="seal"></span></div>
       <p class="lead" id="w-lead"></p>
       <ul class="rules">
-        <li><b id="w-max">20</b> รูปต่อคน เหมือนกล้องฟิล์มใช้แล้วทิ้ง</li>
+        <li><b id="w-max">25</b> รูปต่อคน เหมือนกล้องฟิล์มใช้แล้วทิ้ง</li>
         <li>กดแล้วกดเลย ไม่มีถ่ายใหม่ ไม่มีลบ</li>
         <li id="w-reveal">รูปของทุกคนรวมอยู่ในอัลบั้มเดียวกัน</li>
       </ul>
       <label class="field">
-        <span>ชื่อของคุณ</span>
+        <span>ชื่อของคุณ <em class="req">*</em></span>
         <input id="w-name" type="text" maxlength="40" placeholder="เช่น ต้นน้ำ เพื่อนเจ้าสาว" autocomplete="nickname">
       </label>
+      <p class="name-hint" id="w-name-hint" hidden>ใส่ชื่อก่อนนะ จะได้รู้ว่าใครถ่าย</p>
       <button id="w-start" class="btn primary">เปิดกล้อง</button>
       <button id="w-gallery" class="btn ghost">ดูอัลบั้มรวม</button>
     </div>
@@ -41,7 +42,7 @@
         <button id="c-back" class="icon-btn" aria-label="กลับ">‹</button>
         <div class="counter" aria-live="polite">
           <span class="counter-label">ฟิล์มเหลือ</span>
-          <span class="counter-num" id="c-left">20</span>
+          <span class="counter-num" id="c-left">25</span>
         </div>
         <button id="c-flip" class="icon-btn" aria-label="สลับกล้อง">⟲</button>
       </header>
