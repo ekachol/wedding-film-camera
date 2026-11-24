@@ -9,22 +9,42 @@ $('a-names').textContent = CONFIG.coupleNames;
 let pass = '';
 let photos = [];
 
-async function load() {
-  photos = await store.adminList(pass);
+function paintStats() {
   $('a-count').textContent = photos.length;
   $('a-guests').textContent = new Set(photos.map((p) => p.guest_name || p.id)).size;
+}
+
+async function load() {
+  photos = await store.adminList(pass);
+  paintStats();
   $('a-grid').replaceChildren(...photos.map((p) => {
-    const b = document.createElement('button');
+    const b = document.createElement('div');
     b.className = 'cell' + (p.hidden ? ' is-hidden' : '');
     b.title = p.guest_name || '';
     const img = new Image(); img.loading = 'lazy'; img.src = p.thumbUrl; img.alt = p.guest_name || '';
-    b.append(img);
-    b.onclick = async () => {
-      b.disabled = true;
-      try { await store.adminSetHidden(pass, p.id, !p.hidden); p.hidden = !p.hidden; b.classList.toggle('is-hidden', p.hidden); }
+    const hide = document.createElement('button');
+    hide.className = 'cell-act hide';
+    const del = document.createElement('button');
+    del.className = 'cell-act del'; del.textContent = 'ลบ'; del.setAttribute('aria-label', 'ลบรูปนี้');
+    const paint = () => { hide.textContent = p.hidden ? 'แสดง' : 'ซ่อน'; b.classList.toggle('is-hidden', p.hidden); };
+    paint();
+    hide.onclick = async () => {
+      hide.disabled = true;
+      try { await store.adminSetHidden(pass, p.id, !p.hidden); p.hidden = !p.hidden; paint(); }
       catch (e) { alert('ทำรายการไม่สำเร็จ: ' + e.message); }
-      b.disabled = false;
+      hide.disabled = false;
     };
+    del.onclick = async () => {
+      if (!confirm(`ลบรูปนี้ถาวรใช่ไหม${p.guest_name ? ` (ของ ${p.guest_name})` : ''}\nลบแล้วกู้คืนไม่ได้`)) return;
+      del.disabled = true;
+      try {
+        await store.adminDelete(pass, p.id);
+        photos = photos.filter((x) => x.id !== p.id);
+        b.remove();
+        paintStats();
+      } catch (e) { alert('ลบไม่สำเร็จ: ' + e.message); del.disabled = false; }
+    };
+    b.append(img, hide, del);
     return b;
   }));
 }
@@ -40,8 +60,8 @@ $('a-form').onsubmit = async (e) => {
     drawQR();
   } catch (err) {
     $('a-err').textContent = err.message !== 'BAD_PASS' ? 'เชื่อมต่อไม่ได้: ' + err.message
-      : store.isLive ? 'รหัสผ่านไม่ถูกต้อง (รหัสที่ตั้งไว้ใน Supabase)'
-      : 'ลิงก์นี้ยังเป็นโหมดทดลอง ยังไม่ได้เชื่อม Supabase (รหัสทดลองคือ ' + CONFIG.demoAdminPass + ') ให้เปิดจากลิงก์หลักของ Vercel';
+      : store.isLive ? 'รหัสผ่านไม่ถูกต้อง'
+      : 'ลิงก์นี้เป็นเวอร์ชันเก่าที่ยังไม่ได้เชื่อมที่เก็บรูป ให้เปิดจากลิงก์หลักของเว็บ';
   }
 };
 $('a-refresh').onclick = () => load().catch((e) => alert(e.message));

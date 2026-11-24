@@ -50,7 +50,6 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .btn.primary:active { background: var(--accent); border-color: var(--accent); }
 .btn.ghost { border-color: rgba(85,48,28,.3); }
 .btn.small { width: auto; padding: 11px 28px; }
-.demo-note { font-size: 12.5px; color: var(--accent); margin-top: 18px; }
 
 /* ---------- กล้อง ---------- */
 #v-camera { background: radial-gradient(120% 80% at 50% 0%, #4a4037, var(--body) 70%); color: #eee6d8; }
@@ -122,3 +121,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .hint { font-size: 13px; color: var(--soft); margin: 10px 0 0; }
 .qr-card { background: #fff; padding: 26px 22px; text-align: center; max-width: 320px; margin: 14px auto 0; border: 1px solid rgba(85,48,28,.14); }
 .qr-card canvas { width: 100%; height: auto; display: block; }
+.cell-act { position: absolute; bottom: 5px; font-size: 12px; line-height: 1; padding: 6px 9px; border: 0; border-radius: 12px; background: rgba(255,255,255,.88); color: var(--ink); }
+.cell-act.hide { left: 5px; }
+.cell-act.del { right: 5px; background: rgba(150,40,20,.88); color: #fff; }
+.cell-act:disabled { opacity: .5; }

@@ -30,6 +30,7 @@ async function tx(mode, fn) {
 }
 export const roll = {
   put: (rec) => tx('readwrite', (s) => s.put(rec)),
+  del: (id) => tx('readwrite', (s) => s.delete(id)),
   all: async () => ((await tx('readonly', (s) => s.getAll())) || []).sort((a, b) => b.created_at.localeCompare(a.created_at)),
 };
 
@@ -129,4 +130,13 @@ export async function adminSetHidden(pass, id, hidden) {
   }
   const { error } = await sb.rpc('admin_set_hidden', { p_pass: pass, p_id: id, p_hidden: hidden });
   if (error) throw new Error(error.message);
+}
+
+/** ลบรูปถาวร: ลบรายการในฐานข้อมูลก่อน (ต้องใช้รหัส) แล้วลบไฟล์ */
+export async function adminDelete(pass, id) {
+  if (!isLive) { await roll.del(id); return; }
+  const { error } = await sb.rpc('admin_delete_photo', { p_pass: pass, p_id: id });
+  if (error) throw new Error(/BAD_PASS/.test(error.message) ? 'BAD_PASS' : error.message);
+  const { error: e2 } = await sb.storage.from(BUCKET).remove([`full/${id}.jpg`, `thumb/${id}.jpg`]);
+  if (e2) console.warn('file cleanup failed', e2);   // รูปหายจากอัลบั้มแล้ว ไฟล์ค้างไม่กระทบ
 }

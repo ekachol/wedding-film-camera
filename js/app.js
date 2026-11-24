@@ -23,7 +23,6 @@ $('w-venue').textContent = CONFIG.eventVenue || '';
 $('w-date').textContent = CONFIG.eventDate;
 $('w-lead').textContent = CONFIG.welcomeText;
 $('g-title').textContent = CONFIG.coupleNames;
-$('demo-note').hidden = store.isLive;
 
 // ---------- แขก ----------
 function uuid() {
