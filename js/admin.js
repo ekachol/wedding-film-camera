@@ -88,25 +88,28 @@ function drawQR() {
   const ink = CONFIG.theme?.ink || '#2b2622';
   ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = ink; ctx.textAlign = 'center';
-  ctx.font = 'italic 400 84px "Cormorant Garamond", Georgia, serif';
-  ctx.fillText(CONFIG.coupleNames, W / 2, 150);
-  ctx.font = '300 38px "Noto Serif Thai", serif';
-  ctx.fillText('สแกนเพื่อเปิดกล้องฟิล์มของงาน', W / 2, 225);
+  ctx.fillStyle = CONFIG.theme?.accent || ink;
+  ctx.font = '400 170px "Mrs Saint Delafield", "Cormorant Garamond", serif';
+  ctx.fillText(CONFIG.coupleNames, W / 2, 170);
+  ctx.fillStyle = ink;
+  ctx.font = '300 34px "Prompt", sans-serif';
+  ctx.fillText('สแกนเพื่อเปิดกล้องฟิล์มของงาน', W / 2, 275);
 
   const qr = qrcode(0, 'M');
   qr.addData($('a-url').value || location.origin);
   qr.make();
   const n = qr.getModuleCount();
-  const size = 640, cellSize = size / n, x0 = (W - size) / 2, y0 = 300;
+  const size = 640, cellSize = size / n, x0 = (W - size) / 2, y0 = 335;
   for (let r = 0; r < n; r++) for (let col = 0; col < n; col++) {
     if (qr.isDark(r, col)) ctx.fillRect(x0 + col * cellSize, y0 + r * cellSize, Math.ceil(cellSize), Math.ceil(cellSize));
   }
-  ctx.font = '300 34px "Noto Serif Thai", serif';
+  ctx.font = '300 30px "Prompt", sans-serif';
   ctx.fillStyle = CONFIG.theme?.soft || '#8a8172';
-  ctx.fillText(`คนละ ${CONFIG.maxShots} รูป  ·  ดูรูปของทุกคนได้ในอัลบั้มรวม`, W / 2, 1040);
-  ctx.fillStyle = CONFIG.theme?.accent || '#c8602a';
-  ctx.fillText('✦', W / 2, 1110);
+  ctx.fillText(`คนละ ${CONFIG.maxShots} รูป  ·  ดูรูปของทุกคนได้ในอัลบั้มรวม`, W / 2, 1060);
+  ctx.font = '400 34px "Cormorant Garamond", serif';
+  ctx.fillStyle = ink;
+  ctx.fillText(CONFIG.eventDate || '', W / 2, 1125);
 }
 $('a-url').oninput = drawQR;
-document.fonts?.ready.then(() => { if (!$('a-main').hidden) drawQR(); });
+Promise.all(['170px "Mrs Saint Delafield"', '300 34px Prompt', '34px "Cormorant Garamond"'].map((f) => document.fonts.load(f, 'Say สแกน'))).then(drawQR).catch(() => {});
 $('a-qrsave').onclick = () => $('a-qr').toBlob((b) => saveBlob(b, 'wedding-camera-qr.png'), 'image/png');

@@ -25,7 +25,7 @@ const LUT = (() => {
   return { r, g, b };
 })();
 
-function grade(ctx, w, h) {
+function grade(ctx, w, h, bw) {
   const img = ctx.getImageData(0, 0, w, h);
   const d = img.data;
   const sat = 0.88;
@@ -33,9 +33,13 @@ function grade(ctx, w, h) {
     let r = LUT.r[d[i]], g = LUT.g[d[i + 1]], b = LUT.b[d[i + 2]];
     const l = 0.299 * r + 0.587 * g + 0.114 * b;
     const n = (Math.random() - 0.5) * 26 * (1 - l / 400);   // เกรน ชัดในเงามากกว่า
-    d[i] = l + (r - l) * sat + n;
-    d[i + 1] = l + (g - l) * sat + n;
-    d[i + 2] = l + (b - l) * sat + n;
+    if (bw) {                                              // ขาวดำอมน้ำตาลอ่อน ๆ
+      d[i] = l * 1.03 + 4 + n; d[i + 1] = l * 0.99 + 1 + n; d[i + 2] = l * 0.93 + n;
+    } else {
+      d[i] = l + (r - l) * sat + n;
+      d[i + 1] = l + (g - l) * sat + n;
+      d[i + 2] = l + (b - l) * sat + n;
+    }
   }
   ctx.putImageData(img, 0, 0);
 }
@@ -86,7 +90,7 @@ export function develop(src, opts = {}) {
   c.width = OUT_W; c.height = OUT_H;
   const ctx = c.getContext('2d', { willReadFrequently: true });
   coverDraw(ctx, src, sw, sh, OUT_W, OUT_H, !!opts.mirror);
-  grade(ctx, OUT_W, OUT_H);
+  grade(ctx, OUT_W, OUT_H, opts.style === 'bw');
   overlays(ctx, OUT_W, OUT_H, opts);
   return c;
 }

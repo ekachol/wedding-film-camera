@@ -11,7 +11,15 @@ const root = document.documentElement.style;
 for (const [k, v] of Object.entries(CONFIG.theme || {})) root.setProperty(`--${k}`, v);
 document.title = `${CONFIG.coupleNames} · Film Camera`;
 $('w-title').textContent = CONFIG.eventTitle;
-$('w-names').textContent = CONFIG.coupleNames;
+{
+  // ชื่อแบบลายเซ็นสองบรรทัด เหมือนโลโก้บนเว็บของบ่าวสาว
+  const parts = CONFIG.coupleNames.split(/\s*&\s*/);
+  if (parts.length === 2) {
+    const l2 = document.createElement('span'); l2.className = 'l2'; l2.textContent = parts[1];
+    $('w-names').append(`${parts[0]} &`, l2);
+  } else $('w-names').textContent = CONFIG.coupleNames;
+}
+$('w-venue').textContent = CONFIG.eventVenue || '';
 $('w-date').textContent = CONFIG.eventDate;
 $('w-lead').textContent = CONFIG.welcomeText;
 $('g-title').textContent = CONFIG.coupleNames;
@@ -120,7 +128,7 @@ async function capture(src, mirror) {
   try {
     click();
     const f = $('c-flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
-    const canvas = develop(src, { mirror, dateStamp: CONFIG.dateStamp });
+    const canvas = develop(src, { mirror, dateStamp: CONFIG.dateStamp, style: CONFIG.filmStyle });
     const [full, thumb] = await Promise.all([toBlob(canvas), makeThumb(canvas)]);
     const rec = { id: uuid(), guest_id: guest.id, guest_name: guest.name, created_at: new Date().toISOString(), full, thumb, uploaded: false };
     await store.roll.put(rec);
