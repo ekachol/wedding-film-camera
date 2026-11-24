@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#f4efe6">
+  <title>Film Camera</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Serif+Thai:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- หน้าแรก -->
+  <section id="v-welcome" class="view">
+    <div class="welcome">
+      <p class="eyebrow" id="w-title"></p>
+      <h1 class="names" id="w-names"></h1>
+      <p class="date" id="w-date"></p>
+      <div class="rule"><span>✦</span></div>
+      <p class="lead" id="w-lead"></p>
+      <ul class="rules">
+        <li><b id="w-max">20</b> รูปต่อคน เหมือนกล้องฟิล์มใช้แล้วทิ้ง</li>
+        <li>กดแล้วกดเลย ไม่มีถ่ายใหม่ ไม่มีลบ</li>
+        <li id="w-reveal">รูปของทุกคนรวมอยู่ในอัลบั้มเดียวกัน</li>
+      </ul>
+      <label class="field">
+        <span>ชื่อของคุณ</span>
+        <input id="w-name" type="text" maxlength="40" placeholder="เช่น ต้นน้ำ เพื่อนเจ้าสาว" autocomplete="nickname">
+      </label>
+      <button id="w-start" class="btn primary">เปิดกล้อง</button>
+      <button id="w-gallery" class="btn ghost">ดูอัลบั้มรวม</button>
+      <p class="demo-note" id="demo-note" hidden>โหมดทดลอง: รูปยังเก็บอยู่ในเครื่องนี้เท่านั้น</p>
+    </div>
+  </section>
+
+  <!-- กล้อง -->
+  <section id="v-camera" class="view" hidden>
+    <div class="cam">
+      <header class="cam-top">
+        <button id="c-back" class="icon-btn" aria-label="กลับ">‹</button>
+        <div class="counter" aria-live="polite">
+          <span class="counter-label">ฟิล์มเหลือ</span>
+          <span class="counter-num" id="c-left">20</span>
+        </div>
+        <button id="c-flip" class="icon-btn" aria-label="สลับกล้อง">⟲</button>
+      </header>
+
+      <div class="finder">
+        <video id="c-video" playsinline muted autoplay></video>
+        <div class="finder-marks"><i></i><i></i><i></i><i></i></div>
+        <div class="flash" id="c-flash"></div>
+        <div class="finder-msg" id="c-msg" hidden></div>
+        <img id="c-last" class="last-shot" alt="" hidden>
+      </div>
+
+      <footer class="cam-bottom">
+        <button id="c-gallery" class="side-btn">อัลบั้ม</button>
+        <button id="c-shutter" class="shutter" aria-label="ถ่ายรูป"><span></span></button>
+        <div class="side-btn status" id="c-status"></div>
+      </footer>
+      <input id="c-file" type="file" accept="image/*" capture="environment" hidden>
+    </div>
+  </section>
+
+  <!-- อัลบั้ม -->
+  <section id="v-gallery" class="view" hidden>
+    <header class="g-top">
+      <button id="g-back" class="icon-btn dark" aria-label="กลับ">‹</button>
+      <h2 class="g-title" id="g-title"></h2>
+      <button id="g-cam" class="pill">กล้อง</button>
+    </header>
+    <nav class="tabs">
+      <button class="tab on" data-tab="all">ทุกคน</button>
+      <button class="tab" data-tab="mine">ของฉัน</button>
+    </nav>
+    <div id="g-empty" class="g-empty" hidden></div>
+    <div id="g-grid" class="grid"></div>
+    <button id="g-more" class="btn ghost more" hidden>ดูเพิ่ม</button>
+  </section>
+
+  <!-- ดูรูปใหญ่ -->
+  <div id="lightbox" class="lightbox" hidden>
+    <button id="lb-close" class="icon-btn" aria-label="ปิด">✕</button>
+    <div class="print"><img id="lb-img" alt=""><p id="lb-cap"></p></div>
+    <button id="lb-save" class="btn primary small">บันทึกรูป</button>
+  </div>
+
+  <script src="vendor/supabase.js"></script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

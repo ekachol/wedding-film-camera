@@ -1,0 +1,100 @@
+-- ============================================================
+--  ตั้งค่า Supabase สำหรับเว็บกล้องฟิล์มงานแต่ง
+--  วิธีใช้: เปิด Supabase > SQL Editor > วางทั้งไฟล์นี้ > แก้รหัสผ่านบรรทัดล่างสุด > กด Run
+--  รันซ้ำได้ ไม่ทำให้รูปหาย
+-- ============================================================
+
+-- ตั้งค่ากลาง (แก้ทีหลังได้ที่ Table Editor > app_settings)
+create table if not exists public.app_settings (
+  id int primary key default 1 check (id = 1),
+  max_shots int not null default 20,        -- จำนวนรูปต่อแขก 1 คน
+  reveal_at timestamptz                     -- ว่าง = เห็นอัลบั้มรวมทันที, ใส่วันเวลา = เปิดพร้อมกันตอนนั้น
+);
+insert into public.app_settings (id) values (1) on conflict do nothing;
+
+create table if not exists public.photos (
+  id uuid primary key,
+  guest_id text not null check (char_length(guest_id) between 8 and 64),
+  guest_name text not null default '' check (char_length(guest_name) <= 40),
+  created_at timestamptz not null default now(),
+  hidden boolean not null default false
+);
+create index if not exists photos_created_idx on public.photos (created_at desc);
+create index if not exists photos_guest_idx on public.photos (guest_id);
+
+-- รหัสผ่านของบ่าวสาว (ไม่มีใครอ่านตารางนี้ได้จากหน้าเว็บ)
+create table if not exists public.admin_secret (
+  id int primary key default 1 check (id = 1),
+  pass text not null
+);
+
+alter table public.app_settings enable row level security;
+alter table public.photos enable row level security;
+alter table public.admin_secret enable row level security;
+
+drop policy if exists "read settings" on public.app_settings;
+create policy "read settings" on public.app_settings for select to anon, authenticated using (true);
+
+drop policy if exists "guest insert" on public.photos;
+create policy "guest insert" on public.photos for insert to anon, authenticated with check (hidden = false);
+
+drop policy if exists "gallery read" on public.photos;
+create policy "gallery read" on public.photos for select to anon, authenticated using (
+  not hidden
+  and coalesce((select reveal_at <= now() from public.app_settings where id = 1), true)
+);
+
+-- กันถ่ายเกินจำนวนฟิล์ม (นับที่เซิร์ฟเวอร์อีกชั้น)
+create or replace function public.enforce_film_limit() returns trigger
+language plpgsql security definer set search_path = public as $$
+declare lim int; n int;
+begin
+  select max_shots into lim from app_settings where id = 1;
+  select count(*) into n from photos where guest_id = new.guest_id;
+  if n >= coalesce(lim, 20) then
+    raise exception 'FILM_LIMIT';
+  end if;
+  new.created_at := now();
+  new.hidden := false;
+  return new;
+end $$;
+drop trigger if exists photos_film_limit on public.photos;
+create trigger photos_film_limit before insert on public.photos
+  for each row execute function public.enforce_film_limit();
+
+-- ฟังก์ชันสำหรับหน้าบ่าวสาว ต้องส่งรหัสผ่านมาด้วยทุกครั้ง
+create or replace function public.admin_list_photos(p_pass text) returns setof public.photos
+language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from admin_secret where id = 1 and pass = p_pass) then
+    raise exception 'BAD_PASS';
+  end if;
+  return query select * from photos order by created_at desc;
+end $$;
+
+create or replace function public.admin_set_hidden(p_pass text, p_id uuid, p_hidden boolean) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  if not exists (select 1 from admin_secret where id = 1 and pass = p_pass) then
+    raise exception 'BAD_PASS';
+  end if;
+  update photos set hidden = p_hidden where id = p_id;
+end $$;
+
+grant execute on function public.admin_list_photos(text) to anon, authenticated;
+grant execute on function public.admin_set_hidden(text, uuid, boolean) to anon, authenticated;
+
+-- ที่เก็บไฟล์รูป: เปิดดูได้ทุกคน อัปโหลดได้เฉพาะ JPEG ไม่เกิน 3 MB
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('photos', 'photos', true, 3145728, array['image/jpeg'])
+on conflict (id) do update set public = true, file_size_limit = 3145728, allowed_mime_types = array['image/jpeg'];
+
+drop policy if exists "guest upload photos" on storage.objects;
+create policy "guest upload photos" on storage.objects for insert to anon, authenticated
+  with check (bucket_id = 'photos');
+
+-- ============================================================
+--  >>> แก้รหัสผ่านของบ่าวสาวตรงนี้ก่อนกด Run <<<
+-- ============================================================
+insert into public.admin_secret (id, pass) values (1, 'เปลี่ยนรหัสตรงนี้')
+on conflict (id) do update set pass = excluded.pass;

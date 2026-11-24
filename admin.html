@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>สำหรับบ่าวสาว · Film Camera</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400&family=Noto+Serif+Thai:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="admin">
+    <h1 id="a-names"></h1>
+    <p class="sub">หน้าสำหรับบ่าวสาว</p>
+
+    <section class="card" id="a-login">
+      <h2>ใส่รหัสผ่าน</h2>
+      <form class="row" id="a-form">
+        <label class="field" style="flex:1;margin:0"><input id="a-pass" type="password" placeholder="รหัสผ่านของบ่าวสาว" autocomplete="current-password"></label>
+        <button class="btn primary">เข้าดู</button>
+      </form>
+      <p class="hint" id="a-err"></p>
+    </section>
+
+    <div id="a-main" hidden>
+      <section class="card">
+        <h2>รูปทั้งหมด</h2>
+        <div class="stats">
+          <div><b id="a-count">0</b><span>รูป</span></div>
+          <div><b id="a-guests">0</b><span>คนที่ถ่าย</span></div>
+        </div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn primary" id="a-zip">ดาวน์โหลดทั้งหมด (.zip)</button>
+          <button class="btn ghost" id="a-refresh">โหลดใหม่</button>
+        </div>
+        <p class="hint" id="a-progress">ถ้ารูปเยอะ ระบบจะแบ่งเป็นไฟล์ละ 150 รูปให้อัตโนมัติ</p>
+      </section>
+
+      <section class="card">
+        <h2>QR code สำหรับวางในงาน</h2>
+        <label class="field"><span>ลิงก์เว็บกล้อง</span><input id="a-url" type="url"></label>
+        <div class="qr-card" id="a-qrcard"><canvas id="a-qr" width="900" height="1200"></canvas></div>
+        <div class="row" style="justify-content:center;margin-top:14px"><button class="btn ghost" id="a-qrsave">บันทึกรูป QR</button></div>
+      </section>
+
+      <section class="card">
+        <h2>จัดการรูป</h2>
+        <p class="hint" style="margin:0 0 12px">แตะรูปเพื่อซ่อนจากอัลบั้มรวม แตะอีกครั้งเพื่อนำกลับมา (รูปที่ซ่อนจะจางลง และยังอยู่ในไฟล์ดาวน์โหลด)</p>
+        <div class="grid" id="a-grid" style="padding:0"></div>
+      </section>
+    </div>
+  </main>
+
+  <script src="vendor/supabase.js"></script>
+  <script src="vendor/jszip.min.js"></script>
+  <script src="vendor/qrcode.js"></script>
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
