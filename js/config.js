@@ -4,7 +4,7 @@
 // ============================================================
 export const CONFIG = {
   // ---- ข้อมูลงาน ----
-  coupleNames: 'Say & Earth',          // ชื่อบ่าวสาวที่โชว์บนหน้าแรก
+  coupleNames: 'Sayn & Earth',          // ชื่อบ่าวสาวที่โชว์บนหน้าแรก
   eventTitle: 'The Wedding of',        // บรรทัดเล็กเหนือชื่อ
   eventDate: '26.12.2026',
   eventVenue: 'Courtyard by Marriott Suvarnabhumi, Bangkok',
