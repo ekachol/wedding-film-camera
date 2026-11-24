@@ -1,6 +1,6 @@
 import { CONFIG } from './config.js';
 import * as store from './store.js';
-import { develop, toBlob, makeThumb } from './film.js';
+import { grab, develop, toBlob, makeThumb, PREVIEW_FILTER } from './film.js';
 
 const $ = (id) => document.getElementById(id);
 const views = ['welcome', 'camera', 'gallery'];
@@ -65,6 +65,7 @@ function show(name) {
 let stream = null;
 let facing = 'environment';
 const video = $('c-video');
+video.style.filter = PREVIEW_FILTER[CONFIG.filmStyle === 'classic' || CONFIG.filmStyle === 'bw' ? CONFIG.filmStyle : 'ultramax'];
 
 function finderMsg(html) {
   const m = $('c-msg');
@@ -89,9 +90,11 @@ async function startCamera() {
     video.srcObject = stream;
     video.classList.toggle('mirror', facing === 'user');
     await video.play().catch(() => {});
+    paintFlash();
   } catch (e) {
     console.warn('camera unavailable', e);
     stream = null;
+    paintFlash();
     finderMsg(`<div>เปิดกล้องในหน้านี้ไม่ได้<br>กดปุ่มด้านล่างเพื่อถ่ายด้วยกล้องของเครื่องแทน<br><small>หรือเปิดลิงก์นี้ใน Safari / Chrome แล้วกดอนุญาตให้ใช้กล้อง</small></div><button class="btn" id="c-native">ถ่ายรูป</button>`);
     $('c-native').onclick = () => $('c-file').click();
   }
@@ -100,6 +103,106 @@ function stopCamera() {
   if (stream) stream.getTracks().forEach((t) => t.stop());
   stream = null;
   video.srcObject = null;
+  paintFlash();
+}
+
+// ---------- แฟลช ----------
+// กล้องหลัง: เปิดไฟแฟลชของมือถือ (torch) ค้างไว้แป๊บเดียวตอนกดถ่าย ใช้ได้กับ Android Chrome และ iPhone ที่อัปเดต iOS ใหม่ ๆ
+// กล้องหน้า: ไม่มีไฟ ใช้จอขาวสว่างเต็มจอส่องหน้าแทน แบบเดียวกับแฟลชกล้องหน้าของ iPhone
+const FLASH_KEY = 'fc_flash';
+let flashOn = localStorage.getItem(FLASH_KEY) === '1';
+const track = () => stream?.getVideoTracks()[0] || null;
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function flashMode() {
+  const t = track();
+  if (!t) return 'none';
+  let caps = {}, settings = {};
+  try { caps = t.getCapabilities?.() || {}; } catch { /* เบราว์เซอร์เก่า */ }
+  try { settings = t.getSettings?.() || {}; } catch { /* เบราว์เซอร์เก่า */ }
+  if (caps.torch) return 'torch';
+  const face = settings.facingMode || (facing === 'user' ? 'user' : '');
+  if (face === 'environment') return navigator.mediaDevices.getSupportedConstraints?.().torch ? 'torch' : 'none';
+  return 'screen'; // กล้องหน้า หรือกล้องโน้ตบุ๊ก
+}
+function paintFlash() {
+  const b = $('c-flashbtn');
+  b.hidden = !stream;
+  b.classList.toggle('on', flashOn);
+  b.setAttribute('aria-pressed', String(flashOn));
+  b.setAttribute('aria-label', flashOn ? 'แฟลช: เปิด' : 'แฟลช: ปิด');
+}
+function toast(text) {
+  const t = $('c-toast');
+  t.hidden = true; void t.offsetWidth;
+  t.textContent = text; t.hidden = false;
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => { t.hidden = true; }, 2800);
+}
+function flashHint() {
+  const m = flashMode();
+  if (m === 'screen') return 'แฟลชกล้องหน้า: จอจะสว่างขาวช่วยส่องหน้าตอนถ่าย';
+  if (m === 'none') return 'เครื่องนี้ไม่ให้เว็บเปิดไฟแฟลชกล้องหลัง\nสลับเป็นกล้องหน้าจะใช้จอสว่างช่วยแทน';
+  return 'เปิดแฟลชแล้ว';
+}
+$('c-flashbtn').onclick = () => {
+  flashOn = !flashOn;
+  localStorage.setItem(FLASH_KEY, flashOn ? '1' : '0');
+  paintFlash();
+  toast(flashOn ? flashHint() : 'ปิดแฟลช');
+};
+
+// ความสว่างเฉลี่ยของภาพในช่องมอง ใช้รอให้กล้องปรับแสงหลังแฟลชติด
+const probe = document.createElement('canvas');
+probe.width = 24; probe.height = 32;
+function frameLevel() {
+  try {
+    const p = probe.getContext('2d', { willReadFrequently: true });
+    p.drawImage(video, 0, 0, probe.width, probe.height);
+    const d = p.getImageData(0, 0, probe.width, probe.height).data;
+    let s = 0;
+    for (let i = 0; i < d.length; i += 4) s += d[i] * 0.3 + d[i + 1] * 0.59 + d[i + 2] * 0.11;
+    return s / (d.length / 4);
+  } catch { return 0; }
+}
+async function settle(minMs, maxMs) {
+  const t0 = performance.now();
+  let prev = frameLevel(), steady = 0;
+  while (performance.now() - t0 < maxMs) {
+    await wait(70);
+    const cur = frameLevel();
+    if (performance.now() - t0 >= minMs) {
+      steady = Math.abs(cur - prev) <= Math.max(1.5, prev * 0.03) ? steady + 1 : 0;
+      if (steady >= 2) break;
+    }
+    prev = cur;
+  }
+}
+async function setTorch(on) {
+  const t = track();
+  if (!t) return;
+  // ใส่ขนาดภาพเดิมไปด้วย ไม่งั้นบางเครื่องลดความละเอียดภาพเมื่อสั่งไฟ
+  const { facingMode, deviceId, groupId, advanced, ...keep } = t.getConstraints();
+  await t.applyConstraints({ ...keep, advanced: [{ torch: on }] });
+}
+/** เปิดไฟแฟลช รอกล้องปรับแสง แล้วคืนฟังก์ชันปิดไฟ */
+async function fireFlash() {
+  const m = flashMode();
+  if (m === 'torch') {
+    try {
+      await setTorch(true);
+      await settle(300, 1300);
+    } catch (e) { console.warn('torch failed', e); }
+    let off = false;
+    return () => { if (!off) { off = true; setTorch(false).catch(() => {}); } };
+  }
+  if (m === 'screen') {
+    const s = $('screen-flash');
+    s.classList.add('on');
+    await settle(220, 900);
+    return () => s.classList.remove('on');
+  }
+  return null;
 }
 async function refreshAllowance() {
   settings = await store.loadSettings(guest.id);
@@ -129,13 +232,23 @@ function click() {
 }
 
 let busy = false;
-async function capture(src, mirror) {
+async function capture(src, mirror, withFlash = false) {
   if (busy || left() === 0) return;
   busy = true;
+  const shutter = $('c-shutter');
+  let lightOff = null;
   try {
+    if (withFlash) {
+      shutter.classList.add('firing');
+      lightOff = await fireFlash();
+      if (src === video && (current !== 'camera' || !stream || !video.videoWidth)) return; // ออกจากกล้องระหว่างรอแฟลช ไม่เสียฟิล์ม
+    }
     click();
+    const frame = grab(src, mirror); // เก็บภาพทันทีตอนไฟยังสว่าง แล้วค่อยปิดไฟ
+    lightOff?.();
     const f = $('c-flash'); f.classList.remove('go'); void f.offsetWidth; f.classList.add('go');
-    const canvas = develop(src, { mirror, dateStamp: CONFIG.dateStamp, style: CONFIG.filmStyle });
+    await new Promise((r) => requestAnimationFrame(() => setTimeout(r, 0))); // ให้จอดับแฟลชก่อนเริ่มล้างรูป
+    const canvas = develop(frame, { dateStamp: CONFIG.dateStamp, style: CONFIG.filmStyle });
     const [full, thumb] = await Promise.all([toBlob(canvas), makeThumb(canvas)]);
     const rec = { id: uuid(), guest_id: guest.id, guest_name: guest.name, created_at: new Date().toISOString(), full, thumb, uploaded: false };
     await store.roll.put(rec);
@@ -150,12 +263,14 @@ async function capture(src, mirror) {
     console.error(e);
     alert('ถ่ายรูปนี้ไม่สำเร็จ ลองอีกครั้งนะ (ไม่เสียฟิล์ม)');
   } finally {
+    lightOff?.();
+    shutter.classList.remove('firing');
     busy = false;
   }
 }
 
 $('c-shutter').onclick = () => {
-  if (stream && video.videoWidth) capture(video, facing === 'user');
+  if (stream && video.videoWidth) capture(video, facing === 'user', flashOn);
   else $('c-file').click();
 };
 $('c-file').onchange = async (e) => {
@@ -166,7 +281,11 @@ $('c-file').onchange = async (e) => {
   img.src = URL.createObjectURL(file);
   try { await img.decode(); await capture(img, false); } finally { URL.revokeObjectURL(img.src); }
 };
-$('c-flip').onclick = () => { facing = facing === 'user' ? 'environment' : 'user'; startCamera(); };
+$('c-flip').onclick = async () => {
+  facing = facing === 'user' ? 'environment' : 'user';
+  await startCamera();
+  if (flashOn && stream) toast(flashHint());
+};
 $('c-back').onclick = () => show('welcome');
 $('c-gallery').onclick = () => show('gallery');
 $('c-last').onclick = () => { tab = 'mine'; show('gallery'); };

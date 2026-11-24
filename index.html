@@ -44,13 +44,19 @@
           <span class="counter-label">ฟิล์มเหลือ</span>
           <span class="counter-num" id="c-left">25</span>
         </div>
-        <button id="c-flip" class="icon-btn" aria-label="สลับกล้อง">⟲</button>
+        <div class="cam-tools">
+          <button id="c-flashbtn" class="icon-btn flash-btn" aria-pressed="false" aria-label="แฟลช: ปิด" hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path class="bolt" d="M13.2 2.5 5 13.6h6.1l-1.3 7.9 8.2-11.1h-6.1z"/><path class="slash" d="M4 4l16 16"/></svg>
+          </button>
+          <button id="c-flip" class="icon-btn" aria-label="สลับกล้อง">⟲</button>
+        </div>
       </header>
 
       <div class="finder">
         <video id="c-video" playsinline muted autoplay></video>
         <div class="finder-marks"><i></i><i></i><i></i><i></i></div>
         <div class="flash" id="c-flash"></div>
+        <div class="toast" id="c-toast" role="status" hidden></div>
         <div class="finder-msg" id="c-msg" hidden></div>
         <img id="c-last" class="last-shot" alt="" hidden>
       </div>
@@ -87,6 +93,9 @@
     <div class="print"><img id="lb-img" alt=""><p id="lb-cap"></p></div>
     <button id="lb-save" class="btn primary small">บันทึกรูป</button>
   </div>
+
+  <!-- แฟลชหน้าจอ: จอขาวสว่างช่วยส่องหน้าตอนถ่ายด้วยกล้องหน้า -->
+  <div id="screen-flash" class="screen-flash" aria-hidden="true"></div>
 
   <script src="vendor/supabase.js"></script>
   <script type="module" src="js/app.js"></script>
