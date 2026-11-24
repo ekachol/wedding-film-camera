@@ -55,7 +55,7 @@ const urlCache = new Map();
 function localRow(r) {
   if (!urlCache.has(r.id)) urlCache.set(r.id, { t: URL.createObjectURL(r.thumb), f: URL.createObjectURL(r.full) });
   const u = urlCache.get(r.id);
-  return { id: r.id, guest_name: r.guest_name, created_at: r.created_at, hidden: !!r.hidden, uploaded: r.uploaded, thumbUrl: u.t, fullUrl: u.f };
+  return { id: r.id, guest_name: r.guest_name, created_at: r.created_at, hidden: !!r.hidden, uploaded: r.uploaded, rejected: !!r.rejected, thumbUrl: u.t, fullUrl: u.f };
 }
 
 export async function myPhotos() {
@@ -68,7 +68,9 @@ export function flush() {
   if (!flushing) flushing = doFlush().finally(() => { flushing = null; });
   return flushing;
 }
+export let lastError = '';
 async function doFlush() {
+  lastError = '';
   const pending = (await roll.all()).filter((r) => !r.uploaded && !r.rejected).reverse();
   let result = 'ok';
   for (const r of pending) {
@@ -87,6 +89,7 @@ async function doFlush() {
       await roll.put(r);
     } catch (e) {
       console.warn('upload failed, will retry', e);
+      lastError = e?.message || e?.error || String(e);
       return 'retry';
     }
   }

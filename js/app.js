@@ -190,7 +190,7 @@ function cell(p) {
   img.loading = 'lazy'; img.alt = p.guest_name ? `รูปโดย ${p.guest_name}` : 'รูปจากงาน';
   img.src = p.thumbUrl;
   b.append(img);
-  if (p.uploaded === false) { const w = document.createElement('span'); w.className = 'wait'; w.textContent = 'รอส่ง'; b.append(w); }
+  if (p.uploaded === false) { const w = document.createElement('span'); w.className = 'wait'; w.textContent = p.rejected ? 'เกินจำนวน' : 'รอส่ง'; b.append(w); }
   b.onclick = () => openLightbox(p);
   return b;
 }
@@ -200,13 +200,29 @@ function renderGrid(emptyText) {
   $('g-empty').hidden = items.length > 0;
   $('g-empty').textContent = emptyText;
 }
+async function paintSyncNote() {
+  const note = $('g-sync');
+  const n = tab === 'mine' ? await store.pendingCount() : 0;
+  note.hidden = !n;
+  if (!n) return;
+  note.replaceChildren(
+    `ยังส่งขึ้นอัลบั้มรวมไม่ได้ ${n} รูป รูปยังอยู่ในเครื่อง ไม่หาย`,
+    Object.assign(document.createElement('small'), { textContent: store.lastError ? `สาเหตุ: ${store.lastError}` : (navigator.onLine ? '' : 'ไม่มีสัญญาณเน็ต') }),
+    Object.assign(document.createElement('button'), { className: 'pill', textContent: 'ลองส่งอีกครั้ง', onclick: async (e) => {
+      e.target.disabled = true; e.target.textContent = 'กำลังส่ง…';
+      await sync(); loadGallery();
+    } }),
+  );
+}
 async function loadGallery(append = false) {
+  $('g-sync').hidden = true;
   document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t.dataset.tab === tab));
   $('g-more').hidden = true;
   try {
     if (tab === 'mine') {
       items = await store.myPhotos();
-      return renderGrid('ยังไม่มีรูปของคุณ\nกดปุ่ม "กล้อง" เพื่อเริ่มถ่าย');
+      renderGrid('ยังไม่มีรูปของคุณ\nกดปุ่ม "กล้อง" เพื่อเริ่มถ่าย');
+      return paintSyncNote();
     }
     if (!revealed()) {
       items = [];
